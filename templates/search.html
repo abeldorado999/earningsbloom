@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Search Hero -->
+<div class="search-hero">
+  <h1 style="font-size:1.75rem;font-weight:800;margin-bottom:.5rem;">Search Companies</h1>
+  <p style="color:var(--text-secondary);font-size:.925rem;">Find earnings summaries by company name or ticker symbol</p>
+  <form action="/search" method="get">
+    <div class="search-box">
+      <input type="text" name="q" value="{{ query }}" placeholder="e.g. Apple, TSLA, NVDA, Microsoft..."
+             autofocus autocomplete="off" id="searchInput">
+      <button type="submit" class="search-btn">Search →</button>
+    </div>
+  </form>
+</div>
+
+<div class="section" style="max-width:760px;">
+
+  {% if query %}
+    {% if results %}
+    <p class="section-sub">{{ results|length }} result(s) for "<strong>{{ query }}</strong>"</p>
+    <div class="search-results">
+      {% for company in results %}
+      <a href="/company/{{ company.slug }}" class="search-result-item fade-in">
+        <div style="display:flex;flex-direction:column;gap:.3rem;">
+          <span style="font-weight:700;font-size:1rem;">{{ company.name }}</span>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <span class="card-ticker mono">{{ company.ticker }}</span>
+            <span class="tag">{{ company.exchange }}</span>
+            <span class="tag">{{ company.sector }}</span>
+          </div>
+        </div>
+        <span style="color:var(--accent);font-size:.85rem;font-weight:600;">View Summaries →</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+      <div style="font-size:3rem;margin-bottom:1rem;">🔍</div>
+      <p style="font-size:1.1rem;">No results for "<strong style="color:var(--text-primary);">{{ query }}</strong>"</p>
+      <p style="margin-top:.5rem;font-size:.875rem;">Try a different ticker or company name.</p>
+      <a href="/companies" style="display:inline-block;margin-top:1.5rem;color:var(--accent);">Browse all companies →</a>
+    </div>
+    {% endif %}
+  {% else %}
+  <!-- Show popular companies when no query -->
+  <p class="section-sub">Popular searches</p>
+  <div class="search-results">
+    {% for slug, ticker, name in [
+      ('apple','AAPL','Apple Inc.'),('microsoft','MSFT','Microsoft'),
+      ('nvidia','NVDA','NVIDIA'),('alphabet','GOOGL','Alphabet (Google)'),
+      ('tesla','TSLA','Tesla'),('meta','META','Meta Platforms'),
+      ('amazon','AMZN','Amazon'),('netflix','NFLX','Netflix'),
+    ] %}
+    <a href="/company/{{ slug }}" class="search-result-item">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <span class="card-ticker mono">{{ ticker }}</span>
+        <span style="font-weight:600;">{{ name }}</span>
+      </div>
+      <span style="color:var(--accent);font-size:.85rem;font-weight:600;">View →</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live search suggestion as user types (submits form on Enter already)
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') this.closest('form').submit();
+  });
+</script>
+{% endblock %}

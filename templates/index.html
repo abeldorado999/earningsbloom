@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "EarningsBloom",
+  "url": "{{ site_url }}",
+  "description": "Free AI-powered earnings call summarizer. Get instant TLDR, revenue vs estimates, CEO guidance and sentiment for every public company — no paywall, no sign-up.",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- ── Hero ───────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">🤖 Powered by Gemini AI</div>
+  <h1>Every Earnings Call.<br><span>Summarized by AI.</span> Free.</h1>
+  <p class="hero-sub">
+    Skip the 100-page PDF. Get instant revenue vs estimates, CEO guidance,
+    top wins &amp; concerns — for every public company, every quarter.
+  </p>
+
+  <!-- Live search -->
+  <form action="/search" method="get" style="max-width:460px;margin:0 auto;">
+    <div class="search-box">
+      <input type="text" name="q" placeholder="Search Apple, TSLA, NVDA..." autocomplete="off" id="heroSearch">
+      <button type="submit" class="search-btn">Search →</button>
+    </div>
+  </form>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-num" id="companiesCount">50+</div>
+      <div class="hero-stat-label">Companies Tracked</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">$0</div>
+      <div class="hero-stat-label">Cost to You</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">&lt;2 min</div>
+      <div class="hero-stat-label">Read Time per Call</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">4×/yr</div>
+      <div class="hero-stat-label">Updated per Company</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── AdSense Top ────────────────────────────────── -->
+{% if adsense_id %}
+<div class="section" style="padding-bottom:0;">
+  <div class="ad-container">
+    <div class="ad-label">Advertisement</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
+         data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Latest Summaries ──────────────────────────── -->
+<div class="section">
+  <h2 class="section-title">Latest Earnings Summaries</h2>
+  <p class="section-sub">Most recently processed earnings calls — updated automatically.</p>
+
+  {% if earnings %}
+  <div class="earnings-grid">
+    {% for e in earnings %}
+    {% set s = e.summaries[0] if e.summaries else {} %}
+    {% set c = e.companies or {} %}
+    <a href="/earnings/{{ c.slug }}/{{ e.quarter|lower }}" class="earning-card fade-in">
+      <div class="card-header">
+        <div class="card-company">
+          <span class="card-company-name">{{ c.name or 'Company' }}</span>
+          <div class="card-meta">
+            <span class="card-ticker">{{ c.ticker }}</span>
+            <span class="card-exchange">{{ c.exchange }}</span>
+          </div>
+        </div>
+        <span class="card-quarter">{{ e.quarter|quarter_display }}</span>
+      </div>
+
+      {% if s.tldr %}
+      <p class="card-tldr">{{ s.tldr[:160] }}{% if s.tldr|length > 160 %}…{% endif %}</p>
+      {% endif %}
+
+      <div class="card-metrics">
+        {% if s.revenue_actual %}
+        <span class="metric-chip {{ 'beat' if s.revenue_beat else 'miss' if s.revenue_beat == false else 'neutral' }}">
+          💰 {{ s.revenue_actual }}
+          {% if s.revenue_beat is not none %}{{ '▲ Beat' if s.revenue_beat else '▼ Miss' }}{% endif %}
+        </span>
+        {% endif %}
+        {% if s.sentiment %}
+        <span class="metric-chip {{ s.sentiment|lower }}">
+          {{ s.sentiment|sentiment_emoji }} {{ s.sentiment|title }}
+        </span>
+        {% endif %}
+      </div>
+
+      <div class="card-footer">
+        <span class="card-date">📅 {{ e.call_date or '—' }}</span>
+        <span class="card-cta">View Summary →</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;color:var(--text-muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">📊</div>
+    <p style="font-size:1.1rem;">No summaries yet — the pipeline is warming up.</p>
+    <p style="margin-top:.5rem;font-size:.9rem;">Earnings calls are processed automatically as they are filed.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Why EarningsBloom ──────────────────────────── -->
+<div class="section" style="padding-top:0;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin-top:1rem;">
+    {% for icon, title, desc in [
+      ('🤖', 'Gemini AI-Powered', 'We use Google Gemini 2.5 to read the full transcript and extract insights no news article captures.'),
+      ('⚡', 'Published Instantly', 'New summaries go live within minutes of the SEC filing — before most news sites even write about it.'),
+      ('📊', 'Structured Data', 'Revenue vs estimates, beat/miss, wins, concerns, CEO guidance and sentiment — all in a scannable format.'),
+      ('🆓', 'Always Free', 'No paywalls, no accounts, no email required. Every summary is publicly accessible forever.'),
+    ] %}
+    <div class="summary-panel fade-in">
+      <div class="panel-body" style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:1.75rem;">{{ icon }}</div>
+        <div style="font-weight:700;font-size:.975rem;">{{ title }}</div>
+        <div style="font-size:.875rem;color:var(--text-secondary);line-height:1.7;">{{ desc }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── AdSense Bottom ─────────────────────────────── -->
+{% if adsense_id %}
+<div class="section" style="padding-top:0;">
+  <div class="ad-container">
+    <div class="ad-label">Advertisement</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
+         data-ad-slot="9876543210" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

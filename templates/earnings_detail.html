@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block head %}
+<!-- JSON-LD: Article schema for this earnings summary page -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ company.name }} {{ quarter_display }} Earnings Call Summary",
+  "description": "{{ meta_description }}",
+  "datePublished": "{{ earnings.call_date }}",
+  "dateModified": "{{ summary.generated_at or earnings.call_date }}",
+  "author": { "@type": "Organization", "name": "EarningsBloom", "url": "{{ site_url }}" },
+  "publisher": { "@type": "Organization", "name": "EarningsBloom", "url": "{{ site_url }}" },
+  "mainEntityOfPage": "{{ canonical_url }}"
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+
+  <!-- ── Breadcrumb ──────────────────────────────── -->
+  <nav class="detail-breadcrumb">
+    <a href="/">Home</a> &rsaquo;
+    <a href="/company/{{ company.slug }}">{{ company.name }}</a> &rsaquo;
+    <span>{{ quarter_display }}</span>
+  </nav>
+
+  <!-- ── Page Header ───────────────────────────────── -->
+  <div class="detail-header fade-in">
+    <h1>{{ company.name }} {{ quarter_display }} Earnings Call Summary</h1>
+    <div class="detail-sub">
+      <span class="card-ticker mono">{{ company.ticker }}</span>
+      <span class="tag">{{ company.exchange }}</span>
+      <span class="tag">{{ company.sector }}</span>
+      <span class="detail-date">📅 {{ earnings.call_date }}</span>
+      {% if summary.sentiment %}
+      <span class="sentiment-badge {{ summary.sentiment|lower }}">
+        {{ summary.sentiment|sentiment_emoji }} {{ summary.sentiment|title }}
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Disclaimer ─────────────────────────────────── -->
+  <div class="disclaimer fade-in">
+    ⚠️ <strong>Not financial advice.</strong> This summary is AI-generated for informational purposes only.
+    Always do your own research before making investment decisions.
+  </div>
+
+  <!-- ── AdSense Top ────────────────────────────────── -->
+  {% if adsense_id %}
+  <div class="ad-container fade-in">
+    <div class="ad-label">Advertisement</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
+         data-ad-slot="1111111111" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+  {% endif %}
+
+  <!-- ── TLDR ──────────────────────────────────────── -->
+  <div class="summary-panel fade-in fade-in-1">
+    <div class="panel-header">📋 TL;DR — What Happened</div>
+    <div class="panel-body">
+      <p class="tldr-text">{{ summary.tldr or 'Summary not yet available.' }}</p>
+    </div>
+  </div>
+
+  <!-- ── Key Metrics ───────────────────────────────── -->
+  <div class="summary-panel fade-in fade-in-2">
+    <div class="panel-header">📊 Key Financial Metrics</div>
+    <div class="panel-body">
+      <div class="metrics-row">
+
+        <!-- Revenue -->
+        <div class="metric-box">
+          <span class="metric-label">Revenue</span>
+          <span class="metric-value">{{ summary.revenue_actual or '—' }}</span>
+          {% if summary.revenue_expected %}
+          <span class="metric-vs">vs est. {{ summary.revenue_expected }}</span>
+          {% endif %}
+          {% if summary.revenue_beat is not none %}
+          <span class="metric-badge {{ 'beat' if summary.revenue_beat else 'miss' }}">
+            {{ '✅ Beat' if summary.revenue_beat else '❌ Miss' }}
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- EPS -->
+        <div class="metric-box">
+          <span class="metric-label">EPS (Diluted)</span>
+          <span class="metric-value">{{ summary.eps_actual or '—' }}</span>
+          {% if summary.eps_expected %}
+          <span class="metric-vs">vs est. {{ summary.eps_expected }}</span>
+          {% endif %}
+          {% if summary.eps_beat is not none %}
+          <span class="metric-badge {{ 'beat' if summary.eps_beat else 'miss' }}">
+            {{ '✅ Beat' if summary.eps_beat else '❌ Miss' }}
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Net Income -->
+        {% if summary.net_income %}
+        <div class="metric-box">
+          <span class="metric-label">Net Income</span>
+          <span class="metric-value">{{ summary.net_income }}</span>
+        </div>
+        {% endif %}
+
+        <!-- YoY Growth -->
+        {% if summary.yoy_growth %}
+        <div class="metric-box">
+          <span class="metric-label">YoY Revenue Growth</span>
+          <span class="metric-value">{{ summary.yoy_growth }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Gross Margin -->
+        {% if summary.gross_margin %}
+        <div class="metric-box">
+          <span class="metric-label">Gross Margin</span>
+          <span class="metric-value">{{ summary.gross_margin }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Sentiment -->
+        <div class="metric-box">
+          <span class="metric-label">AI Sentiment</span>
+          <span class="metric-value" style="font-size:1.1rem;">
+            {{ summary.sentiment|sentiment_emoji }} {{ (summary.sentiment or 'N/A')|title }}
+          </span>
+          {% if summary.sentiment_reason %}
+          <span class="metric-vs" style="line-height:1.5;">{{ summary.sentiment_reason }}</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Wins ──────────────────────────────────────── -->
+  {% if summary.wins %}
+  <div class="summary-panel fade-in fade-in-2">
+    <div class="panel-header">✅ What Went Well</div>
+    <div class="panel-body">
+      <div class="insight-list">
+        {% for win in summary.wins %}
+        <div class="insight-item win">
+          <span class="insight-item-icon">✅</span>
+          <span>{{ win }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Concerns ──────────────────────────────────── -->
+  {% if summary.concerns %}
+  <div class="summary-panel fade-in fade-in-2">
+    <div class="panel-header">⚠️ Concerns &amp; Risks</div>
+    <div class="panel-body">
+      <div class="insight-list">
+        {% for concern in summary.concerns %}
+        <div class="insight-item concern">
+          <span class="insight-item-icon">⚠️</span>
+          <span>{{ concern }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── CEO Guidance ───────────────────────────────── -->
+  {% if summary.ceo_guidance %}
+  <div class="summary-panel fade-in fade-in-3">
+    <div class="panel-header">🔮 CEO / Management Guidance</div>
+    <div class="panel-body">
+      <p style="font-size:.95rem;line-height:1.85;color:var(--text-primary);">{{ summary.ceo_guidance }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Key Quote ──────────────────────────────────── -->
+  {% if summary.key_quote %}
+  <div class="summary-panel fade-in fade-in-3">
+    <div class="panel-header">💬 Key Quote</div>
+    <div class="panel-body">
+      <blockquote class="key-quote">{{ summary.key_quote }}</blockquote>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── AdSense Mid ────────────────────────────────── -->
+  {% if adsense_id %}
+  <div class="ad-container">
+    <div class="ad-label">Advertisement</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
+         data-ad-slot="2222222222" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+  {% endif %}
+
+  <!-- ── Affiliate Strip ───────────────────────────── -->
+  <div class="affiliate-strip fade-in">
+    <h3>📈 Want to act on this insight?</h3>
+    <div class="affiliate-links">
+      <a href="https://zerodha.com" target="_blank" rel="noopener nofollow" class="affiliate-btn">🇮🇳 Open Zerodha Account</a>
+      <a href="https://groww.in"    target="_blank" rel="noopener nofollow" class="affiliate-btn">🌱 Start with Groww</a>
+      <a href="https://seekingalpha.com" target="_blank" rel="noopener nofollow" class="affiliate-btn">📄 Full Transcript on Seeking Alpha</a>
+      <a href="https://www.udemy.com/courses/finance-and-accounting/" target="_blank" rel="noopener nofollow" class="affiliate-btn">📚 Learn Financial Analysis</a>
+    </div>
+  </div>
+
+  <!-- ── Topics / Tags ─────────────────────────────── -->
+  {% if summary.topics %}
+  <div style="margin:1.5rem 0;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:.8rem;color:var(--text-muted);font-weight:600;">Topics:</span>
+    {% for topic in summary.topics %}
+    <span class="tag">{{ topic }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Previous Quarters ─────────────────────────── -->
+  <div class="summary-panel" style="margin-top:2rem;">
+    <div class="panel-header">📁 More from {{ company.name }}</div>
+    <div class="panel-body">
+      <p style="color:var(--text-secondary);font-size:.9rem;">
+        View all earnings summaries for
+        <a href="/company/{{ company.slug }}" style="color:var(--accent);">{{ company.name }} →</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

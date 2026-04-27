@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title }}</title>
+  <meta name="description" content="{{ meta_description }}">
+
+  <!-- Canonical -->
+  {% if canonical_url %}
+  <link rel="canonical" href="{{ canonical_url }}">
+  {% else %}
+  <link rel="canonical" href="{{ site_url }}{{ request.path }}">
+  {% endif %}
+
+  <!-- Open Graph -->
+  <meta property="og:title"       content="{{ page_title }}">
+  <meta property="og:description" content="{{ meta_description }}">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="{{ site_url }}{{ request.path }}">
+  <meta property="og:image"       content="{{ site_url }}/static/img/og-image.png">
+  <meta property="og:site_name"   content="{{ site_name }}">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ page_title }}">
+  <meta name="twitter:description" content="{{ meta_description }}">
+  <meta name="twitter:image"       content="{{ site_url }}/static/img/og-image.png">
+
+  <!-- Fonts + CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+
+  <!-- AdSense -->
+  {% if adsense_id %}
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_id }}" crossorigin="anonymous"></script>
+  {% endif %}
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo">
+      <span class="logo-icon">🌿</span> EarningsBloom
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a>
+      <a href="/companies" class="nav-link {% if request.path == '/companies' %}active{% endif %}">Companies</a>
+      <a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">About</a>
+    </div>
+    <form class="nav-search" action="/search" method="get">
+      <span class="nav-search-icon">🔍</span>
+      <input type="text" name="q" placeholder="Search company or ticker..." autocomplete="off"
+             value="{{ request.args.get('q', '') }}">
+    </form>
+  </div>
+</nav>
+
+<!-- ── Main Content ───────────────────────────── -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Footer ────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand"><span>🌿</span> EarningsBloom</div>
+      <p class="footer-disclaimer" style="margin-top:.5rem;">
+        ⚠️ <strong>Not financial advice.</strong> All summaries are AI-generated for informational
+        purposes only. Always conduct your own research before making investment decisions.
+      </p>
+    </div>
+    <div class="footer-links">
+      <a href="/about">About</a>
+      <a href="/companies">Companies</a>
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+    <div class="footer-copy">
+      © {{ current_year }} EarningsBloom. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

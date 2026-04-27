@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section" style="max-width:960px;">
+
+  <!-- Company Header -->
+  <div class="company-header fade-in">
+    <div style="font-size:3rem;">📊</div>
+    <div class="company-info">
+      <h1>{{ company.name }}</h1>
+      <div class="company-meta">
+        <span class="card-ticker mono">{{ company.ticker }}</span>
+        <span class="tag">{{ company.exchange }}</span>
+        <span class="company-sector">{{ company.sector }}</span>
+      </div>
+    </div>
+  </div>
+
+  {% if earnings %}
+  <h2 class="section-title">All Earnings Summaries</h2>
+  <p class="section-sub">{{ earnings|length }} quarter(s) — click any row to read the full AI summary.</p>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+    <table class="earnings-table">
+      <thead>
+        <tr>
+          <th>Quarter</th>
+          <th>Date</th>
+          <th>Revenue</th>
+          <th>EPS</th>
+          <th>Sentiment</th>
+          <th>Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in earnings %}
+        {% set s = e.summaries[0] if e.summaries else {} %}
+        <tr>
+          <td><strong>{{ e.quarter|quarter_display }}</strong></td>
+          <td class="text-muted" style="font-size:.85rem;">{{ e.call_date or '—' }}</td>
+          <td>
+            {% if s.revenue_actual %}
+            <span class="metric-badge {{ 'beat' if s.revenue_beat else 'miss' if s.revenue_beat == false else '' }}" style="font-family:var(--font-mono);">
+              {{ s.revenue_actual }}
+              {% if s.revenue_beat is not none %}{{ '▲' if s.revenue_beat else '▼' }}{% endif %}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="mono" style="font-size:.875rem;">{{ s.eps_actual or '—' }}</td>
+          <td>
+            {% if s.sentiment %}
+            <span class="sentiment-badge {{ s.sentiment|lower }}" style="padding:.25rem .7rem;font-size:.75rem;">
+              {{ s.sentiment|sentiment_emoji }} {{ s.sentiment|title }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="/earnings/{{ company.slug }}/{{ e.quarter|lower }}" class="view-btn">
+              View →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;color:var(--text-muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">⏳</div>
+    <p>No earnings summaries yet for {{ company.name }}.</p>
+    <p style="margin-top:.5rem;font-size:.875rem;">Check back after the next earnings season.</p>
+  </div>
+  {% endif %}
+
+  <!-- Back link -->
+  <div style="margin-top:2rem;">
+    <a href="/companies" style="color:var(--text-muted);font-size:.875rem;">← All Companies</a>
+  </div>
+</div>
+{% endblock %}
