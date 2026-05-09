@@ -119,25 +119,57 @@ def stage1_extract_numbers(financial_text: str) -> dict:
 
 def stage2_generate_summary(transcript: str, financial_data: dict) -> dict:
     """
-    Use Gemini 2.5 Flash (thinking) to generate the full human-readable summary.
+    Use Gemini 2.5 Flash to generate the full human-readable summary.
     This is the high-quality output users see on the page.
     """
-    # Truncate transcript to 80k chars to stay within token budget
-    truncated  = transcript[:80000]
+    # Truncate transcript to 40k chars — leaves enough tokens for full JSON response
+    truncated  = transcript[:40000]
     fin_json   = json.dumps(financial_data, indent=2)
     prompt     = STAGE2_PROMPT.format(financial_data=fin_json, transcript=truncated)
 
     logger.info("Stage 2: Calling Gemini 2.5 Flash for insights...")
     try:
-        raw    = _call_gemini(GEMINI_STAGE2_MODEL, prompt)
-        parsed = json.loads(raw)
-        return parsed
-    except json.JSONDecodeError as e:
-        logger.error(f"Stage 2 JSON parse error: {e}\nRaw: {raw[:500]}")
-        raise
+        raw = _call_gemini(GEMINI_STAGE2_MODEL, prompt)
+        return _parse_json_robust(raw)
     except Exception as e:
         logger.error(f"Stage 2 Gemini call failed: {e}")
         raise
+
+
+def _parse_json_robust(raw: str) -> dict:
+    """Parse Gemini JSON response with fallback strategies for malformed output."""
+    # Strip markdown code fences if present
+    text = raw.strip()
+    if text.startswith("```"):
+        text = re.sub(r'^```[a-z]*\n?', '', text)
+        text = re.sub(r'\n?```$', '', text)
+        text = text.strip()
+
+    # Attempt 1: direct parse
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Attempt 2: find last closing brace (handles truncated responses)
+    last_brace = text.rfind('}')
+    if last_brace > 0:
+        try:
+            return json.loads(text[:last_brace + 1])
+        except json.JSONDecodeError:
+            pass
+
+    # Attempt 3: walk backward char by char
+    start = text.find('{')
+    if start >= 0:
+        for end in range(len(text), start + 10, -1):
+            try:
+                return json.loads(text[start:end])
+            except json.JSONDecodeError:
+                continue
+
+    raise ValueError(f"Cannot parse Gemini JSON response. First 200 chars: {text[:200]}")
+
 
 
 # ── Master pipeline ───────────────────────────────────────
@@ -145,6 +177,8 @@ def stage2_generate_summary(transcript: str, financial_data: dict) -> dict:
 def process_transcript(transcript_text: str, financial_section: str = None) -> dict:
     """
     Full two-stage pipeline. Returns merged summary dict ready for DB storage.
+    New fields (what_this_means, key_takeaways, investor_perspective) are stored
+    in summary_data as a JSON blob for flexible schema evolution.
     """
     # Use full text if no dedicated financial section found
     fin_text = financial_section or transcript_text
@@ -157,5 +191,21 @@ def process_transcript(transcript_text: str, financial_section: str = None) -> d
     summary = stage2_generate_summary(transcript_text, financial_data)
     logger.info("Stage 2 complete.")
 
-    # Merge all data into one dict
-    return {**financial_data, **summary}
+    # Fields that go into dedicated DB columns
+    db_fields = {
+        "tldr", "wins", "concerns", "ceo_guidance",
+        "key_quote", "sentiment", "sentiment_reason", "topics",
+    }
+
+    # New rich-content fields → stored in summary_data JSON blob
+    rich_fields = {"what_this_means", "key_takeaways", "investor_perspective"}
+    summary_data = {k: summary[k] for k in rich_fields if k in summary}
+
+    # Build final merged dict
+    merged = {**financial_data}
+    for k, v in summary.items():
+        if k in db_fields:
+            merged[k] = v
+    merged["summary_data"] = summary_data
+
+    return merged

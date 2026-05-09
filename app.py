@@ -5,13 +5,15 @@ AI-powered earnings call summarizer
 import logging
 import math
 from datetime import datetime, date
-from flask import Flask, render_template, request, jsonify, abort
+from flask import Flask, render_template, request, jsonify, abort, redirect, url_for
 from models.db import (
     get_all_companies, get_company_by_slug,
     get_earnings_by_company, get_earnings_detail, get_latest_earnings,
+    get_prev_quarter_summary,
 )
-from scraper.scheduler import start_scheduler, stop_scheduler
-from config import SITE_NAME, SITE_URL, SITE_TAGLINE, ADSENSE_PUBLISHER_ID
+from blog_posts import BLOG_POSTS
+from config import SITE_NAME, SITE_URL, SITE_TAGLINE, ADSENSE_PUBLISHER_ID, GA_MEASUREMENT_ID
+import os
 
 # ── Logging ────────────────────────────────────────────────
 logging.basicConfig(
@@ -25,13 +27,16 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = __import__("config").FLASK_SECRET_KEY
 
 # ── Jinja globals ──────────────────────────────────────────
-app.jinja_env.globals.update(
-    site_name=SITE_NAME,
-    site_url=SITE_URL,
-    site_tagline=SITE_TAGLINE,
-    adsense_id=ADSENSE_PUBLISHER_ID,
-    current_year=datetime.now().year,
-)
+@app.context_processor
+def inject_globals():
+    return dict(
+        site_name=SITE_NAME,
+        site_url=SITE_URL,
+        site_tagline=SITE_TAGLINE,
+        adsense_id=ADSENSE_PUBLISHER_ID,
+        ga_id=GA_MEASUREMENT_ID,
+        current_year=datetime.now().year,
+    )
 
 
 # ── Template filters ───────────────────────────────────────
@@ -119,10 +124,21 @@ def earnings_detail(company_slug: str, quarter: str):
         f"in {q_display}. AI summary: top wins, concerns, CEO guidance & key quotes. Free."
     )
 
+    # Fetch previous quarter for QoQ comparison
+    company_id   = detail.get("company_id") or (company.get("id") if isinstance(company, dict) else None)
+    current_date = detail.get("call_date", "")
+    prev_summary = None
+    if company_id and current_date:
+        try:
+            prev_summary = get_prev_quarter_summary(company_id, current_date)
+        except Exception:
+            pass
+
     return render_template("earnings_detail.html",
         company=company,
         earnings=detail,
         summary=summary,
+        prev_summary=prev_summary,
         quarter=quarter.upper(),
         quarter_display=q_display,
         page_title=page_title,
@@ -189,17 +205,97 @@ def about():
     )
 
 
-# ── Sitemap ────────────────────────────────────────────────
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html",
+        page_title=f"Privacy Policy — {SITE_NAME}",
+        meta_description="EarningsBloom Privacy Policy — how we collect, use and protect your data.",
+    )
+
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html",
+        page_title=f"Terms & Conditions — {SITE_NAME}",
+        meta_description="EarningsBloom Terms & Conditions — rules governing use of the site and its AI-generated content.",
+    )
+
+
+@app.route("/disclaimer")
+def disclaimer():
+    return render_template("disclaimer.html",
+        page_title=f"Financial Disclaimer — {SITE_NAME}",
+        meta_description="EarningsBloom Financial Disclaimer — AI summaries are not financial advice. Always verify with official SEC filings.",
+    )
+
+
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        # In production, send email via SendGrid/Mailgun.
+        # For now, just log it and show success.
+        name    = request.form.get("name", "")
+        email   = request.form.get("email", "")
+        subject = request.form.get("subject", "")
+        message = request.form.get("message", "")
+        logger.info(f"Contact form: from={email} name={name} subject={subject} msg={message[:80]}")
+        return render_template("contact.html",
+            sent=True,
+            page_title=f"Contact — {SITE_NAME}",
+            meta_description="Contact EarningsBloom — report errors, ask questions, or request features.",
+        )
+    return render_template("contact.html",
+        sent=False,
+        page_title=f"Contact — {SITE_NAME}",
+        meta_description="Contact EarningsBloom — report errors, ask questions, or request features.",
+    )
+
+
+@app.route("/blog")
+def blog_index():
+    return render_template("blog_index.html",
+        posts=BLOG_POSTS,
+        page_title=f"Investor Education & Guides — {SITE_NAME}",
+        meta_description="Free beginner guides on earnings reports, EPS, revenue, and investing concepts. Plain English, no jargon.",
+    )
+
+
+@app.route("/blog/<slug>")
+def blog_post(slug: str):
+    post = next((p for p in BLOG_POSTS if p["slug"] == slug), None)
+    if not post:
+        abort(404)
+    related = [p for p in BLOG_POSTS if p["slug"] in post.get("related_slugs", [])]
+    return render_template("blog_post.html",
+        post=post,
+        related=related,
+        page_title=f"{post['title']} — {SITE_NAME}",
+        meta_description=post["meta_description"],
+    )
+
+
+# ── Sitemap ─────────────────────────────────────────────
 
 @app.route("/sitemap.xml")
 def sitemap():
     companies = get_all_companies()
     latest    = get_latest_earnings(limit=500)
 
+    today = date.today().isoformat()
     static_urls = [
-        {"loc": SITE_URL + "/",          "priority": "1.0", "changefreq": "daily"},
-        {"loc": SITE_URL + "/companies", "priority": "0.8", "changefreq": "weekly"},
-        {"loc": SITE_URL + "/about",     "priority": "0.5", "changefreq": "monthly"},
+        {"loc": SITE_URL + "/",           "priority": "1.0", "changefreq": "daily",   "lastmod": today},
+        {"loc": SITE_URL + "/companies",  "priority": "0.8", "changefreq": "weekly",  "lastmod": today},
+        {"loc": SITE_URL + "/about",      "priority": "0.6", "changefreq": "monthly"},
+        {"loc": SITE_URL + "/contact",    "priority": "0.5", "changefreq": "monthly"},
+        {"loc": SITE_URL + "/blog",       "priority": "0.7", "changefreq": "weekly",  "lastmod": today},
+        {"loc": SITE_URL + "/privacy",    "priority": "0.3", "changefreq": "yearly"},
+        {"loc": SITE_URL + "/terms",      "priority": "0.3", "changefreq": "yearly"},
+        {"loc": SITE_URL + "/disclaimer", "priority": "0.3", "changefreq": "yearly"},
+    ]
+    blog_urls = [
+        {"loc": f"{SITE_URL}/blog/{p['slug']}", "priority": "0.7", "changefreq": "monthly",
+         "lastmod": p["published"]}
+        for p in BLOG_POSTS
     ]
     company_urls = [
         {"loc": f"{SITE_URL}/company/{c['slug']}", "priority": "0.8", "changefreq": "quarterly"}
@@ -210,12 +306,12 @@ def sitemap():
             "loc": f"{SITE_URL}/earnings/{e['companies']['slug']}/{e['quarter'].lower()}",
             "priority": "0.9",
             "changefreq": "yearly",
-            "lastmod": e.get("call_date", date.today().isoformat()),
+            "lastmod": str(e.get("call_date", today))[:10],
         }
         for e in latest if e.get("companies")
     ]
 
-    all_urls = static_urls + company_urls + earnings_urls
+    all_urls = static_urls + blog_urls + company_urls + earnings_urls
     xml = render_template("sitemap.xml", urls=all_urls)
     return app.response_class(xml, mimetype="application/xml")
 
@@ -224,6 +320,38 @@ def sitemap():
 def robots():
     txt = f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n"
     return app.response_class(txt, mimetype="text/plain")
+
+
+# ── Pipeline Trigger (called by GCP Cloud Scheduler) ──────
+
+PIPELINE_SECRET = os.environ.get("PIPELINE_SECRET", "")
+
+@app.route("/api/run-pipeline", methods=["POST"])
+def run_pipeline():
+    """
+    Secure endpoint triggered by GCP Cloud Scheduler during earnings season.
+    Requires Bearer token matching PIPELINE_SECRET env var.
+    """
+    auth = request.headers.get("Authorization", "")
+    if not PIPELINE_SECRET or auth != f"Bearer {PIPELINE_SECRET}":
+        logger.warning("Unauthorised pipeline trigger attempt.")
+        return jsonify({"error": "Unauthorised"}), 401
+
+    # Run in background so the HTTP request returns immediately
+    import threading
+    from scraper.orchestrator import run_all_companies
+
+    def _run():
+        logger.info("Pipeline triggered by Cloud Scheduler.")
+        try:
+            run_all_companies(days_back=3)
+            logger.info("Pipeline run complete.")
+        except Exception as e:
+            logger.error(f"Pipeline run failed: {e}")
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    return jsonify({"status": "Pipeline started"}), 202
 
 
 # ── Error handlers ─────────────────────────────────────────
@@ -235,16 +363,6 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return render_template("404.html", page_title=f"Server Error — {SITE_NAME}"), 500
-
-
-# ── Startup ────────────────────────────────────────────────
-
-@app.before_request
-def _start_scheduler_once():
-    """Start background scheduler on first request."""
-    if not hasattr(app, "_scheduler_started"):
-        start_scheduler()
-        app._scheduler_started = True
 
 
 if __name__ == "__main__":

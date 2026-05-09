@@ -28,8 +28,8 @@ SEARCH_HEADERS = {
 
 def get_recent_filings(cik: str, form_type: str = "8-K", days_back: int = 7) -> list:
     """
-    Fetch recent filings for a company from SEC EDGAR submissions API.
-    Returns list of dicts with accession number, filing date, and documents.
+    Fetch recent earnings-related 8-K filings (Item 2.02 only) from SEC EDGAR.
+    Item 2.02 = 'Results of Operations and Financial Condition' = earnings press release.
     """
     cik_padded = cik.zfill(10)
     url = f"https://data.sec.gov/submissions/CIK{cik_padded}.json"
@@ -46,6 +46,7 @@ def get_recent_filings(cik: str, form_type: str = "8-K", days_back: int = 7) -> 
     dates       = filings.get("filingDate", [])
     accessions  = filings.get("accessionNumber", [])
     documents   = filings.get("primaryDocument", [])
+    items_list  = filings.get("items", [])   # e.g. "2.02" or "2.02,9.01"
 
     cutoff = date.today() - timedelta(days=days_back)
     results = []
@@ -55,6 +56,11 @@ def get_recent_filings(cik: str, form_type: str = "8-K", days_back: int = 7) -> 
             continue
         filing_date = date.fromisoformat(dates[i])
         if filing_date < cutoff:
+            continue
+        # Only pick filings that include Item 2.02 (Results of Operations)
+        items_str = str(items_list[i]) if i < len(items_list) else ""
+        if "2.02" not in items_str:
+            logger.debug(f"Skipping non-earnings 8-K filed {dates[i]} (items: {items_str})")
             continue
         results.append({
             "accession": accessions[i].replace("-", ""),

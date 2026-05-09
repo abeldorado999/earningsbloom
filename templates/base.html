@@ -39,6 +39,17 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_id }}" crossorigin="anonymous"></script>
   {% endif %}
 
+  <!-- Google Analytics 4 -->
+  {% if ga_id %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ ga_id }}', { 'anonymize_ip': true });
+  </script>
+  {% endif %}
+
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -52,7 +63,9 @@
     <div class="nav-links">
       <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a>
       <a href="/companies" class="nav-link {% if request.path == '/companies' %}active{% endif %}">Companies</a>
+      <a href="/blog" class="nav-link {% if request.path.startswith('/blog') %}active{% endif %}">Learn</a>
       <a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">About</a>
+      <a href="/contact" class="nav-link {% if request.path == '/contact' %}active{% endif %}">Contact</a>
     </div>
     <form class="nav-search" action="/search" method="get">
       <span class="nav-search-icon">🔍</span>
@@ -79,7 +92,12 @@
     </div>
     <div class="footer-links">
       <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+      <a href="/blog">Learn</a>
       <a href="/companies">Companies</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms &amp; Conditions</a>
+      <a href="/disclaimer">Disclaimer</a>
       <a href="/sitemap.xml">Sitemap</a>
     </div>
     <div class="footer-copy">
@@ -90,5 +108,42 @@
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block scripts %}{% endblock %}
+
+<!-- ── Cookie Consent Banner ─────────────────────────── -->
+<div id="cookieBanner" style="
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:.875rem 1.25rem;box-shadow:0 -4px 24px rgba(0,0,0,.3);
+  display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;justify-content:space-between;">
+  <p style="margin:0;font-size:.85rem;color:var(--text-secondary);max-width:680px;line-height:1.6;">
+    🍪 We use cookies for analytics and to serve relevant ads. By continuing you agree to our
+    <a href="/privacy" style="color:var(--accent);">Privacy Policy</a>.
+  </p>
+  <div style="display:flex;gap:.5rem;flex-shrink:0;">
+    <button onclick="acceptCookies()" style="
+      background:var(--accent);color:#000;border:none;border-radius:var(--radius-sm);
+      padding:.4rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;">
+      Accept
+    </button>
+    <a href="/privacy" style="
+      background:transparent;color:var(--text-muted);border:1px solid var(--border);
+      border-radius:var(--radius-sm);padding:.4rem .75rem;font-size:.85rem;
+      text-decoration:none;display:inline-block;">
+      Learn More
+    </a>
+  </div>
+</div>
+<script>
+  function acceptCookies() {
+    localStorage.setItem('cookieConsent', '1');
+    document.getElementById('cookieBanner').style.display = 'none';
+  }
+  (function() {
+    if (!localStorage.getItem('cookieConsent')) {
+      document.getElementById('cookieBanner').style.display = 'flex';
+    }
+  })();
+</script>
+
 </body>
 </html>

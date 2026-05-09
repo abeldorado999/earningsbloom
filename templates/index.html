@@ -17,7 +17,7 @@
 {% block content %}
 <!-- ── Hero ───────────────────────────────────────── -->
 <section class="hero">
-  <div class="hero-badge">🤖 Powered by Gemini AI</div>
+  <div class="hero-badge">🤖 AI-Powered Earnings Summaries</div>
   <h1>Every Earnings Call.<br><span>Summarized by AI.</span> Free.</h1>
   <p class="hero-sub">
     Skip the 100-page PDF. Get instant revenue vs estimates, CEO guidance,
@@ -34,7 +34,7 @@
 
   <div class="hero-stats">
     <div class="hero-stat">
-      <div class="hero-stat-num" id="companiesCount">50+</div>
+      <div class="hero-stat-num" id="companiesCount">186+</div>
       <div class="hero-stat-label">Companies Tracked</div>
     </div>
     <div class="hero-stat">
@@ -52,17 +52,7 @@
   </div>
 </section>
 
-<!-- ── AdSense Top ────────────────────────────────── -->
-{% if adsense_id %}
-<div class="section" style="padding-bottom:0;">
-  <div class="ad-container">
-    <div class="ad-label">Advertisement</div>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
-         data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  </div>
-</div>
-{% endif %}
+<!-- AdSense placeholder — real slot IDs added post-approval -->
 
 <!-- ── Latest Summaries ──────────────────────────── -->
 <div class="section">
@@ -124,7 +114,7 @@
 <div class="section" style="padding-top:0;">
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin-top:1rem;">
     {% for icon, title, desc in [
-      ('🤖', 'Gemini AI-Powered', 'We use Google Gemini 2.5 to read the full transcript and extract insights no news article captures.'),
+      ('🤖', 'Advanced AI Analysis', 'Our AI reads the full transcript and extracts insights no news article captures — revenue vs estimates, CEO signals, and market sentiment.'),
       ('⚡', 'Published Instantly', 'New summaries go live within minutes of the SEC filing — before most news sites even write about it.'),
       ('📊', 'Structured Data', 'Revenue vs estimates, beat/miss, wins, concerns, CEO guidance and sentiment — all in a scannable format.'),
       ('🆓', 'Always Free', 'No paywalls, no accounts, no email required. Every summary is publicly accessible forever.'),
@@ -139,16 +129,4 @@
     {% endfor %}
   </div>
 </div>
-
-<!-- ── AdSense Bottom ─────────────────────────────── -->
-{% if adsense_id %}
-<div class="section" style="padding-top:0;">
-  <div class="ad-container">
-    <div class="ad-label">Advertisement</div>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
-         data-ad-slot="9876543210" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  </div>
-</div>
-{% endif %}
 {% endblock %}

@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block head %}
-<!-- JSON-LD: Article schema for this earnings summary page -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -9,8 +8,8 @@
   "description": "{{ meta_description }}",
   "datePublished": "{{ earnings.call_date }}",
   "dateModified": "{{ summary.generated_at or earnings.call_date }}",
-  "author": { "@type": "Organization", "name": "EarningsBloom", "url": "{{ site_url }}" },
-  "publisher": { "@type": "Organization", "name": "EarningsBloom", "url": "{{ site_url }}" },
+  "author": { "@type": "Person", "name": "Abhi", "url": "{{ site_url }}/about" },
+  "publisher": { "@type": "Organization", "name": "EarningsBloom", "logo": {"@type": "ImageObject", "url": "{{ site_url }}/static/img/og-image.png"}, "url": "{{ site_url }}" },
   "mainEntityOfPage": "{{ canonical_url }}"
 }
 </script>
@@ -34,6 +33,7 @@
       <span class="tag">{{ company.exchange }}</span>
       <span class="tag">{{ company.sector }}</span>
       <span class="detail-date">📅 {{ earnings.call_date }}</span>
+      <span class="tag" style="color:var(--text-muted);border-color:var(--border);">&#9201; ~60 sec read</span>
       {% if summary.sentiment %}
       <span class="sentiment-badge {{ summary.sentiment|lower }}">
         {{ summary.sentiment|sentiment_emoji }} {{ summary.sentiment|title }}
@@ -42,21 +42,107 @@
     </div>
   </div>
 
-  <!-- ── Disclaimer ─────────────────────────────────── -->
-  <div class="disclaimer fade-in">
-    ⚠️ <strong>Not financial advice.</strong> This summary is AI-generated for informational purposes only.
-    Always do your own research before making investment decisions.
+  <!-- ── 60-Second Brief ────────────────────────────── -->
+  {% set extra = summary.summary_data if summary.summary_data else {} %}
+  <div class="brief-card fade-in">
+    <div class="brief-card-header">
+      <span class="brief-badge">⏱️ 60-Second Brief</span>
+      <span class="brief-company">{{ company.name }} &middot; {{ quarter_display }}</span>
+    </div>
+
+    <div class="brief-metrics-row">
+
+      <!-- Stock Reaction -->
+      {% if extra.price_reaction is defined and extra.price_reaction is not none %}
+      {% set pct = extra.price_reaction %}
+      <div class="brief-metric {{ 'brief-up' if pct > 0 else 'brief-down' }}">
+        <div class="brief-metric-label">Stock Next Day</div>
+        <div class="brief-metric-value">
+          {{ '▲' if pct > 0 else '▼' }} {{ pct|abs }}%
+        </div>
+        <div class="brief-metric-sub">
+          ${{ extra.price_before }} → ${{ extra.price_after }}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Revenue -->
+      {% if summary.revenue_actual %}
+      <div class="brief-metric {{ 'brief-up' if summary.revenue_beat else 'brief-down' if summary.revenue_beat == false else 'brief-neutral' }}">
+        <div class="brief-metric-label">Revenue</div>
+        <div class="brief-metric-value">{{ summary.revenue_actual }}</div>
+        <div class="brief-metric-sub">
+          {% if summary.revenue_beat is not none %}
+            {{ '✅ Beat' if summary.revenue_beat else '❌ Missed' }}
+            {% if summary.revenue_expected %} est. {{ summary.revenue_expected }}{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- EPS -->
+      {% if summary.eps_actual %}
+      <div class="brief-metric {{ 'brief-up' if summary.eps_beat else 'brief-down' if summary.eps_beat == false else 'brief-neutral' }}">
+        <div class="brief-metric-label">EPS</div>
+        <div class="brief-metric-value">{{ summary.eps_actual }}</div>
+        <div class="brief-metric-sub">
+          {% if summary.eps_beat is not none %}
+            {{ '✅ Beat' if summary.eps_beat else '❌ Missed' }}
+            {% if summary.eps_expected %} est. {{ summary.eps_expected }}{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Sentiment -->
+      <div class="brief-metric brief-neutral">
+        <div class="brief-metric-label">AI Sentiment</div>
+        <div class="brief-metric-value">{{ summary.sentiment|sentiment_emoji }} {{ (summary.sentiment or 'N/A')|title }}</div>
+        <div class="brief-metric-sub">{{ summary.sentiment_reason[:60] if summary.sentiment_reason else '' }}{% if summary.sentiment_reason and summary.sentiment_reason|length > 60 %}&hellip;{% endif %}</div>
+      </div>
+
+    </div><!-- /brief-metrics-row -->
+
+    <!-- One-line TLDR -->
+    {% if summary.tldr %}
+    <div class="brief-tldr">
+      <span class="brief-tldr-label">📌 Bottom Line:</span>
+      {{ summary.tldr[:220] }}{% if summary.tldr|length > 220 %}&hellip;{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="brief-footer">
+      <span style="color:var(--text-muted);font-size:.75rem;">📦 Source: SEC EDGAR &middot; Processed by Abhi</span>
+      <a href="#full-analysis" style="color:var(--accent);font-size:.8rem;font-weight:600;">Read Full Analysis ↓</a>
+    </div>
+  </div><!-- /brief-card -->
+
+  <!-- ── AI Disclosure + Disclaimer ──────────────────────── -->
+  <div id="full-analysis" class="disclaimer fade-in" style="border-left:3px solid var(--accent);background:rgba(16,185,129,.07);">
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;">
+      <span>🤖 <strong>AI-Assisted Summary</strong> — Produced using a custom AI pipeline by <strong>Abhi</strong>, reviewed for accuracy.</span>
+      <span style="color:var(--text-muted);">·</span>
+      <span>⚠️ <strong>Not financial advice.</strong> For informational purposes only.</span>
+      <a href="/disclaimer" style="color:var(--amber);white-space:nowrap;">Full Disclaimer →</a>
+    </div>
   </div>
 
-  <!-- ── AdSense Top ────────────────────────────────── -->
-  {% if adsense_id %}
-  <div class="ad-container fade-in">
-    <div class="ad-label">Advertisement</div>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
-         data-ad-slot="1111111111" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <!-- ── Trust Bar ──────────────────────────────────── -->
+  <div class="trust-bar fade-in">
+    <span>✍️ <strong>EarningsBloom Editorial Team</strong></span>
+    <span class="trust-sep">·</span>
+    <span>📅 Last updated: {{ summary.generated_at[:10] if summary.generated_at else earnings.call_date }}</span>
+    <span class="trust-sep">·</span>
+    {% if earnings.source_url %}
+    <a href="{{ earnings.source_url }}" target="_blank" rel="noopener" style="color:var(--accent);">
+      📎 Source: SEC EDGAR Filing →
+    </a>
+    {% else %}
+    <span>📎 Source: SEC EDGAR / Company Press Release</span>
+    {% endif %}
   </div>
-  {% endif %}
+
+  <!-- AdSense placeholder — real slot IDs added post-approval -->
 
   <!-- ── TLDR ──────────────────────────────────────── -->
   <div class="summary-panel fade-in fade-in-1">
@@ -100,15 +186,6 @@
           {% endif %}
         </div>
 
-        <!-- Net Income -->
-        {% if summary.net_income %}
-        <div class="metric-box">
-          <span class="metric-label">Net Income</span>
-          <span class="metric-value">{{ summary.net_income }}</span>
-        </div>
-        {% endif %}
-
-        <!-- YoY Growth -->
         {% if summary.yoy_growth %}
         <div class="metric-box">
           <span class="metric-label">YoY Revenue Growth</span>
@@ -116,11 +193,17 @@
         </div>
         {% endif %}
 
-        <!-- Gross Margin -->
         {% if summary.gross_margin %}
         <div class="metric-box">
           <span class="metric-label">Gross Margin</span>
           <span class="metric-value">{{ summary.gross_margin }}</span>
+        </div>
+        {% endif %}
+
+        {% if summary.net_income %}
+        <div class="metric-box">
+          <span class="metric-label">Net Income</span>
+          <span class="metric-value">{{ summary.net_income }}</span>
         </div>
         {% endif %}
 
@@ -138,6 +221,34 @@
       </div>
     </div>
   </div>
+
+  <!-- ── What This Means (Simple Explanation) ────────── -->
+  {% set extra = summary.summary_data if summary.summary_data else {} %}
+  {% if extra.what_this_means %}
+  <div class="summary-panel fade-in fade-in-2">
+    <div class="panel-header">💡 What This Means — Simple Explanation</div>
+    <div class="panel-body">
+      <p style="font-size:.975rem;line-height:1.9;color:var(--text-primary);">{{ extra.what_this_means }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Key Takeaways ─────────────────────────────── -->
+  {% if extra.key_takeaways %}
+  <div class="summary-panel fade-in fade-in-2">
+    <div class="panel-header">🔑 Key Takeaways</div>
+    <div class="panel-body">
+      <ul style="display:flex;flex-direction:column;gap:.75rem;padding-left:0;list-style:none;">
+        {% for item in extra.key_takeaways %}
+        <li style="display:flex;gap:.75rem;align-items:flex-start;font-size:.9rem;line-height:1.7;color:var(--text-primary);">
+          <span style="color:var(--accent);font-weight:700;flex-shrink:0;">→</span>
+          <span>{{ item }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- ── Wins ──────────────────────────────────────── -->
   {% if summary.wins %}
@@ -173,12 +284,37 @@
   </div>
   {% endif %}
 
+  <!-- ── Investor Perspective ──────────────────────── -->
+  {% if extra.investor_perspective %}
+  <div class="summary-panel fade-in fade-in-3">
+    <div class="panel-header">🧠 Investor Perspective</div>
+    <div class="panel-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div style="background:var(--green-bg);border-radius:var(--radius-md);padding:1.1rem;">
+          <div style="font-size:.78rem;font-weight:700;color:var(--green);text-transform:uppercase;
+                      letter-spacing:.06em;margin-bottom:.6rem;">🟢 Bullish Case</div>
+          <p style="font-size:.9rem;line-height:1.75;color:var(--text-primary);margin:0;">
+            {{ extra.investor_perspective.bullish_case }}
+          </p>
+        </div>
+        <div style="background:var(--red-bg);border-radius:var(--radius-md);padding:1.1rem;">
+          <div style="font-size:.78rem;font-weight:700;color:var(--red);text-transform:uppercase;
+                      letter-spacing:.06em;margin-bottom:.6rem;">🔴 Bearish Case</div>
+          <p style="font-size:.9rem;line-height:1.75;color:var(--text-primary);margin:0;">
+            {{ extra.investor_perspective.bearish_case }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ── CEO Guidance ───────────────────────────────── -->
   {% if summary.ceo_guidance %}
   <div class="summary-panel fade-in fade-in-3">
     <div class="panel-header">🔮 CEO / Management Guidance</div>
     <div class="panel-body">
-      <p style="font-size:.95rem;line-height:1.85;color:var(--text-primary);">{{ summary.ceo_guidance }}</p>
+      <p style="font-size:.975rem;line-height:1.9;color:var(--text-primary);">{{ summary.ceo_guidance }}</p>
     </div>
   </div>
   {% endif %}
@@ -193,22 +329,99 @@
   </div>
   {% endif %}
 
-  <!-- ── AdSense Mid ────────────────────────────────── -->
-  {% if adsense_id %}
-  <div class="ad-container">
-    <div class="ad-label">Advertisement</div>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}"
-         data-ad-slot="2222222222" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <!-- ── Quarter-over-Quarter Comparison ─────────────── -->
+  {% if prev_summary %}
+  <div class="summary-panel fade-in fade-in-3">
+    <div class="panel-header">📅 Quarter-over-Quarter Comparison</div>
+    <div class="panel-body">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+        <span style="font-size:.8rem;color:var(--text-muted);">
+          Comparing <strong style="color:var(--text-primary);">{{ quarter_display }}</strong>
+          vs <strong style="color:var(--text-primary);">{{ prev_summary.quarter|quarter_display }}</strong>
+        </span>
+        <a href="/company/{{ company.slug }}" style="font-size:.8rem;color:var(--accent);">
+          All quarters →
+        </a>
+      </div>
+
+      <div class="qoq-grid">
+
+        {% macro qoq_row(label, curr, prev) %}
+        {% if curr and prev %}
+        <div class="qoq-row">
+          <span class="qoq-label">{{ label }}</span>
+          <span class="qoq-prev">{{ prev }}</span>
+          <span class="qoq-arrow">→</span>
+          <span class="qoq-curr">{{ curr }}</span>
+        </div>
+        {% endif %}
+        {% endmacro %}
+
+        {{ qoq_row("Revenue",      summary.revenue_actual, prev_summary.revenue_actual) }}
+        {{ qoq_row("EPS",          summary.eps_actual,     prev_summary.eps_actual) }}
+        {{ qoq_row("Gross Margin", summary.gross_margin,   prev_summary.gross_margin) }}
+        {{ qoq_row("Net Income",   summary.net_income,     prev_summary.net_income) }}
+        {{ qoq_row("YoY Growth",   summary.yoy_growth,     prev_summary.yoy_growth) }}
+
+        <!-- Sentiment change -->
+        {% if summary.sentiment and prev_summary.sentiment %}
+        <div class="qoq-row">
+          <span class="qoq-label">Sentiment</span>
+          <span class="qoq-prev">{{ prev_summary.sentiment|sentiment_emoji }} {{ prev_summary.sentiment|title }}</span>
+          <span class="qoq-arrow">→</span>
+          <span class="qoq-curr {{ summary.sentiment|lower }}">
+            {{ summary.sentiment|sentiment_emoji }} {{ summary.sentiment|title }}
+          </span>
+        </div>
+        {% endif %}
+
+        <!-- Stock reaction change -->
+        {% set curr_extra = summary.summary_data if summary.summary_data else {} %}
+        {% set prev_extra = prev_summary.summary_data if prev_summary.summary_data else {} %}
+        {% if curr_extra.price_reaction is defined and prev_extra.price_reaction is defined %}
+        <div class="qoq-row">
+          <span class="qoq-label">Stock Reaction</span>
+          <span class="qoq-prev">{{ '%+.2f'|format(prev_extra.price_reaction) }}%</span>
+          <span class="qoq-arrow">→</span>
+          <span class="qoq-curr {{ 'bullish' if curr_extra.price_reaction > 0 else 'bearish' }}">
+            {{ '%+.2f'|format(curr_extra.price_reaction) }}%
+          </span>
+        </div>
+        {% endif %}
+
+      </div><!-- /qoq-grid -->
+    </div>
   </div>
   {% endif %}
+
+  <!-- AdSense placeholder — real slot IDs added post-approval -->
+
+  <!-- ── About the Company ─────────────────────────── -->
+  <div class="summary-panel fade-in">
+    <div class="panel-header">🏢 About {{ company.name }}</div>
+    <div class="panel-body">
+      <p style="font-size:.95rem;line-height:1.9;color:var(--text-secondary);">
+        {{ company.description or (company.name + ' (' + company.ticker + ') is a publicly listed company on the ' + company.exchange + ' exchange in the ' + company.sector + ' sector. EarningsBloom tracks its quarterly earnings calls to provide free AI-generated summaries for investors.') }}
+      </p>
+      <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+        <span class="tag">{{ company.ticker }}</span>
+        <span class="tag">{{ company.exchange }}</span>
+        <span class="tag">{{ company.sector }}</span>
+        <a href="/company/{{ company.slug }}" class="tag" style="color:var(--accent);border-color:var(--accent-glow);">
+          All {{ company.name }} Summaries →
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Affiliate Strip ───────────────────────────── -->
   <div class="affiliate-strip fade-in">
     <h3>📈 Want to act on this insight?</h3>
     <div class="affiliate-links">
-      <a href="https://zerodha.com" target="_blank" rel="noopener nofollow" class="affiliate-btn">🇮🇳 Open Zerodha Account</a>
-      <a href="https://groww.in"    target="_blank" rel="noopener nofollow" class="affiliate-btn">🌱 Start with Groww</a>
+      <a href="https://zerodha.com"   target="_blank" rel="noopener nofollow" class="affiliate-btn">🇮🇳 Open Zerodha Account</a>
+      <a href="https://groww.in"      target="_blank" rel="noopener nofollow" class="affiliate-btn">🌱 Start with Groww</a>
       <a href="https://seekingalpha.com" target="_blank" rel="noopener nofollow" class="affiliate-btn">📄 Full Transcript on Seeking Alpha</a>
       <a href="https://www.udemy.com/courses/finance-and-accounting/" target="_blank" rel="noopener nofollow" class="affiliate-btn">📚 Learn Financial Analysis</a>
     </div>
@@ -224,7 +437,22 @@
   </div>
   {% endif %}
 
-  <!-- ── Previous Quarters ─────────────────────────── -->
+  <!-- ── Source / Attribution ──────────────────────── -->
+  <div class="trust-footer">
+    <p>
+      <strong>Source:</strong> This summary is based on the official SEC EDGAR earnings filing for {{ company.name }} ({{ company.ticker }}).
+      {% if earnings.source_url %}
+      <a href="{{ earnings.source_url }}" target="_blank" rel="noopener">View original SEC filing →</a>
+      {% endif %}
+    </p>
+    <p style="margin-top:.5rem;">
+      <strong>Generated by:</strong> EarningsBloom Editorial Team using a proprietary AI pipeline ·
+      <strong>Filed:</strong> {{ earnings.call_date }} ·
+      <a href="/disclaimer">Not financial advice</a>
+    </p>
+  </div>
+
+  <!-- ── More from this company ────────────────────── -->
   <div class="summary-panel" style="margin-top:2rem;">
     <div class="panel-header">📁 More from {{ company.name }}</div>
     <div class="panel-body">

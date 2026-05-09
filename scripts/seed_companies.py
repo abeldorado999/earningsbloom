@@ -6,8 +6,17 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models.db import get_db
+# Use service_role key to bypass RLS for admin seed operation
+from dotenv import load_dotenv
+load_dotenv()
+from supabase import create_client
 import uuid
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SERVICE_KEY  = os.getenv("SUPABASE_SERVICE_KEY")
+
+def get_admin_db():
+    return create_client(SUPABASE_URL, SERVICE_KEY)
 
 # Top 50 US companies by market cap + search volume
 # Format: (name, ticker, exchange, sector, cik, slug)
@@ -76,13 +85,15 @@ COMPANIES = [
 
 
 def seed():
-    db = get_db()
+    if not SERVICE_KEY:
+        print("ERROR: SUPABASE_SERVICE_KEY not set in .env")
+        sys.exit(1)
+    db = get_admin_db()
     inserted = 0
     skipped  = 0
 
     for name, ticker, exchange, sector, cik, slug in COMPANIES:
         if cik is None:
-            # Private company — skip (no SEC filings)
             skipped += 1
             continue
 
@@ -92,18 +103,17 @@ def seed():
             "ticker":    ticker,
             "exchange":  exchange,
             "sector":    sector,
-            "cik":       cik.lstrip("0"),  # Store without leading zeros
+            "cik":       cik.lstrip("0"),
             "slug":      slug,
             "is_active": True,
         }
 
         try:
-            # Upsert by slug so running twice is safe
             db.table("companies").upsert(record, on_conflict="slug").execute()
-            print(f"  ✅  {ticker:6s} — {name}")
+            print(f"  [OK]  {ticker:6s} - {name}")
             inserted += 1
         except Exception as e:
-            print(f"  ❌  {ticker:6s} — {name}: {e}")
+            print(f"  [ERR] {ticker:6s} - {name}: {e}")
             skipped += 1
 
     print(f"\nDone. {inserted} companies inserted/updated, {skipped} skipped.")

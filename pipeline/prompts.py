@@ -26,31 +26,54 @@ TEXT:
 
 # ── Stage 2: Full Summary (Gemini 2.5 Flash — smart) ──────
 STAGE2_PROMPT = """
-You are a senior financial analyst at a top investment bank with 20 years of experience.
-Analyze this earnings call transcript and return a structured JSON summary.
-Return ONLY valid JSON. No markdown, no explanation, no code blocks.
+You are a senior financial analyst writing for a public website read by both expert investors
+and everyday beginners. Your job is to produce a comprehensive, informative, well-written
+earnings call summary that is AT LEAST 700 words of actual content.
 
 Financial data already extracted (use these exact numbers):
 {financial_data}
 
+Return ONLY valid JSON. No markdown, no explanation, no code blocks.
+
 Return this exact JSON structure:
 {{
-  "tldr": "Exactly 2 sentences summarizing what happened this quarter and why it matters.",
+  "tldr": "Exactly 2 sentences summarizing what happened this quarter and why it matters to investors.",
+
+  "what_this_means": "Write 5-7 clear sentences explaining these results in simple, plain English for a beginner investor who has never read an earnings report. Avoid jargon. Explain what the numbers mean in real life terms — e.g. 'Apple made more money this quarter than any quarter before, mostly because more people bought iPhones than the company expected.'",
+
+  "key_takeaways": [
+    "Specific insight #1 with a data point if available",
+    "Specific insight #2 with a data point if available",
+    "Specific insight #3 with a data point if available",
+    "Specific insight #4 with a data point if available",
+    "Specific insight #5 with a data point if available"
+  ],
+
   "wins": [
-    "First specific positive highlight with supporting data if available",
+    "First specific positive highlight with supporting data",
     "Second specific positive highlight",
     "Third specific positive highlight"
   ],
+
   "concerns": [
     "First specific concern or risk raised on the call",
     "Second concern",
     "Third concern"
   ],
+
+  "investor_perspective": {{
+    "bullish_case": "2-3 sentences on why an optimistic investor would be encouraged by these results.",
+    "bearish_case": "2-3 sentences on what concerns a cautious or skeptical investor might have."
+  }},
+
   "ceo_guidance": "2-3 sentences on exactly what management said about the next quarter or fiscal year outlook.",
-  "key_quote": "The single most impactful or surprising direct quote from an executive. Include the speaker name.",
+
+  "key_quote": "The single most impactful or surprising direct quote from an executive. Include the speaker name at the end, e.g. '— Tim Cook, CEO'",
+
   "sentiment": "bullish or neutral or bearish",
   "sentiment_reason": "One sentence explaining why you chose this sentiment.",
-  "topics": ["topic1", "topic2", "topic3"]
+
+  "topics": ["topic1", "topic2", "topic3", "topic4"]
 }}
 
 TRANSCRIPT:

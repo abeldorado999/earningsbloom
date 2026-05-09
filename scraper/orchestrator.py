@@ -11,6 +11,7 @@ from scraper.sec_edgar import (
     clean_transcript, chunk_transcript, detect_quarter,
 )
 from pipeline.gemini import process_transcript
+from pipeline.stock_price import get_stock_reaction
 from models.db import (
     get_all_companies, get_company_by_ticker,
     upsert_earnings_call, upsert_summary, update_earnings_status,
@@ -53,7 +54,7 @@ def process_company(company: dict, days_back: int = 7) -> list:
 
             # Download and extract text
             raw_text = extract_text_from_url(transcript_doc["url"])
-            if not raw_text or len(raw_text) < 1000:
+            if not raw_text or len(raw_text) < 200:
                 logger.warning(f"Transcript too short for {name}, skipping.")
                 continue
 
@@ -62,8 +63,18 @@ def process_company(company: dict, days_back: int = 7) -> list:
             sections   = chunk_transcript(clean_text)
             quarter    = detect_quarter(clean_text, filing["filing_date"])
 
-            # Save earnings call record (status=pending)
+            # Skip if already successfully processed
+            from models.db import get_admin_db as _adb
+            existing = _adb().table("earnings_calls").select("id,status").eq("company_id", company["id"]).eq("quarter", quarter).execute()
+            if existing.data and existing.data[0].get("status") == "processed":
+                logger.info(f"Already processed {name} {quarter}, skipping.")
+                processed.append(quarter)
+                continue
+
+            # Save or update earnings call record
             earnings_id = str(uuid.uuid4())
+            if existing.data:
+                earnings_id = existing.data[0]["id"]  # Reuse existing ID to preserve FK links
             earnings_record = {
                 "id":             earnings_id,
                 "company_id":     company["id"],
@@ -85,6 +96,28 @@ def process_company(company: dict, days_back: int = 7) -> list:
                 financial_section=sections.get("financial_results"),
             )
 
+            # Fetch stock price reaction (non-blocking — failure is fine)
+            ticker = company.get("ticker", "")
+            call_date = filing.get("filing_date", "")
+            stock_data = None
+            if ticker and call_date:
+                try:
+                    stock_data = get_stock_reaction(ticker, call_date)
+                except Exception:
+                    pass
+
+            # Build summary_data with extra enrichment
+            extra_data = {
+                "what_this_means":     result.get("what_this_means", ""),
+                "key_takeaways":       result.get("key_takeaways", []),
+                "investor_perspective": result.get("investor_perspective", {}),
+            }
+            if stock_data:
+                extra_data["price_reaction"] = stock_data["change_pct"]
+                extra_data["price_before"]   = stock_data["price_before"]
+                extra_data["price_after"]    = stock_data["price_after"]
+                logger.info(f"Stock reaction for {ticker}: {stock_data['change_pct']:+.2f}%")
+
             # Save summary
             summary_record = {
                 "earnings_call_id": earnings_id,
@@ -102,6 +135,11 @@ def process_company(company: dict, days_back: int = 7) -> list:
                 "key_quote":        result.get("key_quote", ""),
                 "sentiment":        result.get("sentiment", "neutral"),
                 "sentiment_reason": result.get("sentiment_reason", ""),
+                "yoy_growth":       result.get("yoy_growth"),
+                "gross_margin":     result.get("gross_margin"),
+                "net_income":       result.get("net_income"),
+                "topics":           result.get("topics", []),
+                "summary_data":     extra_data,
                 "generated_at":     date.today().isoformat(),
             }
             upsert_summary(summary_record)

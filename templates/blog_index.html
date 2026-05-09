@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section" style="max-width:900px;">
+
+  <!-- Hero -->
+  <div style="padding:2.5rem 0 2rem;border-bottom:1px solid var(--border);margin-bottom:2.5rem;">
+    <div class="hero-badge" style="margin-bottom:1rem;">📚 EarningsBloom Learn</div>
+    <h1 style="font-size:clamp(1.75rem,4vw,2.5rem);font-weight:900;line-height:1.2;margin-bottom:.75rem;">
+      Free Investor Education
+    </h1>
+    <p style="color:var(--text-secondary);font-size:1rem;max-width:560px;line-height:1.8;">
+      Plain-English guides to help you understand earnings reports, financial metrics, and market concepts — no jargon, no paywall.
+    </p>
+  </div>
+
+  <!-- Blog Grid -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;">
+    {% for post in posts %}
+    <a href="/blog/{{ post.slug }}" class="blog-card">
+      <div class="blog-card-emoji">{{ post.hero_emoji }}</div>
+      <div class="blog-card-category">{{ post.category }}</div>
+      <h2 class="blog-card-title">{{ post.title }}</h2>
+      <p class="blog-card-desc">{{ post.meta_description }}</p>
+      <div class="blog-card-footer">
+        <span class="blog-card-read">{{ post.read_time }}</span>
+        <span style="color:var(--accent);font-weight:600;font-size:.8rem;">Read →</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- CTA -->
+  <div class="summary-panel" style="margin-top:3rem;text-align:center;">
+    <div class="panel-body" style="padding:2rem;">
+      <div style="font-size:2rem;margin-bottom:.75rem;">📊</div>
+      <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">Ready to read real earnings?</h3>
+      <p style="color:var(--text-secondary);font-size:.9rem;margin-bottom:1.25rem;">
+        Browse AI-generated summaries of the latest earnings calls — free, instant, no sign-up.
+      </p>
+      <a href="/" style="background:var(--accent);color:#000;padding:.65rem 1.5rem;
+         border-radius:var(--radius-md);font-weight:700;font-size:.9rem;text-decoration:none;">
+        View Latest Earnings →
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

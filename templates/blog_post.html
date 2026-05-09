@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ post.title }}",
+  "description": "{{ post.meta_description }}",
+  "datePublished": "{{ post.published }}",
+  "author": { "@type": "Organization", "name": "EarningsBloom Editorial Team", "url": "{{ site_url }}" },
+  "publisher": { "@type": "Organization", "name": "EarningsBloom", "url": "{{ site_url }}" },
+  "mainEntityOfPage": "{{ site_url }}/blog/{{ post.slug }}"
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+
+  <!-- Breadcrumb -->
+  <nav class="detail-breadcrumb">
+    <a href="/">Home</a> &rsaquo;
+    <a href="/blog">Learn</a> &rsaquo;
+    <span>{{ post.title[:40] }}{% if post.title|length > 40 %}...{% endif %}</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="fade-in" style="margin-bottom:2rem;">
+    <div style="font-size:3rem;margin-bottom:1rem;">{{ post.hero_emoji }}</div>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;">
+      <span class="tag" style="color:var(--accent);border-color:var(--accent-glow);">{{ post.category }}</span>
+      <span style="font-size:.8rem;color:var(--text-muted);">🕐 {{ post.read_time }}</span>
+      <span style="font-size:.8rem;color:var(--text-muted);">📅 {{ post.published }}</span>
+    </div>
+    <h1 style="font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:900;line-height:1.25;margin-bottom:1rem;">
+      {{ post.title }}
+    </h1>
+    <!-- Trust bar -->
+    <div class="trust-bar">
+      <span>✍️ <strong>EarningsBloom Editorial Team</strong></span>
+      <span class="trust-sep">·</span>
+      <span>📅 Published {{ post.published }}</span>
+      <span class="trust-sep">·</span>
+      <span>🕐 {{ post.read_time }}</span>
+    </div>
+  </div>
+
+  <!-- Intro -->
+  <div class="summary-panel fade-in fade-in-1">
+    <div class="panel-body">
+      <p style="font-size:1.05rem;line-height:1.9;color:var(--text-primary);font-style:italic;">
+        {{ post.intro }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Sections -->
+  {% for section in post.sections %}
+  <div class="blog-section fade-in">
+    <h2>{{ section.heading }}</h2>
+    <div class="blog-content">
+      {% for para in section.content.strip().split('\n\n') %}
+        {% if para.strip() %}
+          {% if para.strip().startswith('**') and para.strip().endswith('**') %}
+            <p><strong>{{ para.strip()[2:-2] }}</strong></p>
+          {% elif para.strip().startswith('•') or para.strip().startswith('*') %}
+            <ul>
+              {% for item in para.strip().split('\n') %}
+                {% if item.strip() and (item.strip().startswith('•') or item.strip().startswith('*')) %}
+                  <li>{{ item.strip().lstrip('•* ') | replace('**','') }}</li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          {% elif para.strip().startswith('>') %}
+            <blockquote class="key-quote" style="font-style:normal;">
+              {{ para.strip().lstrip('> ') }}
+            </blockquote>
+          {% elif '|' in para and '---' in para %}
+            {# Skip markdown tables - render as paragraph #}
+            <p style="font-family:var(--font-mono);font-size:.85rem;color:var(--text-secondary);">{{ para }}</p>
+          {% else %}
+            <p>{{ para.strip() | replace('**', '') }}</p>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- CTA -->
+  <div class="summary-panel" style="margin-top:2.5rem;text-align:center;">
+    <div class="panel-body" style="padding:1.75rem;">
+      <p style="font-weight:700;font-size:1rem;margin-bottom:.5rem;">📊 See It In Action</p>
+      <p style="color:var(--text-secondary);font-size:.875rem;margin-bottom:1.25rem;line-height:1.7;">
+        Read a real AI-generated earnings summary and see all these concepts applied to an actual company report.
+      </p>
+      <a href="/" style="background:var(--accent);color:#000;padding:.65rem 1.5rem;
+         border-radius:var(--radius-md);font-weight:700;font-size:.875rem;text-decoration:none;display:inline-block;">
+        Browse Latest Earnings →
+      </a>
+    </div>
+  </div>
+
+  <!-- Related Posts -->
+  {% if related %}
+  <div style="margin-top:2.5rem;">
+    <h3 style="font-size:1rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+               letter-spacing:.06em;margin-bottom:1rem;">📚 Related Articles</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;">
+      {% for rel in related %}
+      <a href="/blog/{{ rel.slug }}" class="blog-card" style="padding:1.1rem;">
+        <div style="font-size:1.5rem;margin-bottom:.5rem;">{{ rel.hero_emoji }}</div>
+        <div class="blog-card-category">{{ rel.category }}</div>
+        <div style="font-weight:700;font-size:.9rem;color:var(--text-primary);line-height:1.4;margin-top:.35rem;">
+          {{ rel.title }}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Source note -->
+  <div class="trust-footer" style="margin-top:2rem;">
+    <p>
+      <strong>Editorial Note:</strong> This article was written by the EarningsBloom Editorial Team for informational and educational purposes only.
+      It does not constitute financial advice. Always consult a qualified financial professional before making investment decisions.
+      <a href="/disclaimer">Full Disclaimer →</a>
+    </p>
+  </div>
+
+</div>
+{% endblock %}

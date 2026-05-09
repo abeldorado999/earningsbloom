@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS earnings_calls (
   fiscal_year     INTEGER,
   call_date       DATE,
   transcript_url  VARCHAR(500),
+  source_url      VARCHAR(500),   -- Direct SEC filing URL
   raw_text        TEXT,
   status          VARCHAR(20)  NOT NULL DEFAULT 'pending',
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -58,7 +59,8 @@ CREATE TABLE IF NOT EXISTS summaries (
   sentiment           VARCHAR(20),
   sentiment_reason    TEXT,
   topics              JSONB        NOT NULL DEFAULT '[]',
-  generated_at        DATE         NOT NULL DEFAULT CURRENT_DATE,
+  summary_data        JSONB        DEFAULT '{}',  -- Stores: what_this_means, key_takeaways, investor_perspective
+  generated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   UNIQUE(earnings_call_id, language)
 );
 CREATE INDEX IF NOT EXISTS idx_summaries_earnings ON summaries(earnings_call_id);
@@ -77,24 +79,36 @@ ALTER TABLE summaries      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_usage      ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access (needed for the website to work)
+DROP POLICY IF EXISTS "Allow public read companies" ON companies;
 CREATE POLICY "Allow public read companies"
   ON companies FOR SELECT TO anon USING (true);
 
+DROP POLICY IF EXISTS "Allow public read earnings" ON earnings_calls;
 CREATE POLICY "Allow public read earnings"
   ON earnings_calls FOR SELECT TO anon USING (true);
 
+DROP POLICY IF EXISTS "Allow public read summaries" ON summaries;
 CREATE POLICY "Allow public read summaries"
   ON summaries FOR SELECT TO anon USING (true);
 
 -- Allow service role full access (for the scraper/pipeline)
+DROP POLICY IF EXISTS "Service role full access companies" ON companies;
 CREATE POLICY "Service role full access companies"
   ON companies FOR ALL TO service_role USING (true);
 
+DROP POLICY IF EXISTS "Service role full access earnings" ON earnings_calls;
 CREATE POLICY "Service role full access earnings"
   ON earnings_calls FOR ALL TO service_role USING (true);
 
+DROP POLICY IF EXISTS "Service role full access summaries" ON summaries;
 CREATE POLICY "Service role full access summaries"
   ON summaries FOR ALL TO service_role USING (true);
 
+DROP POLICY IF EXISTS "Service role full access api_usage" ON api_usage;
 CREATE POLICY "Service role full access api_usage"
   ON api_usage FOR ALL TO service_role USING (true);
+
+-- ── Migrations (safe to run on existing DB) ──────────────
+ALTER TABLE earnings_calls ADD COLUMN IF NOT EXISTS source_url VARCHAR(500);
+ALTER TABLE summaries ADD COLUMN IF NOT EXISTS summary_data JSONB DEFAULT '{}';
+ALTER TABLE summaries ALTER COLUMN generated_at TYPE TIMESTAMPTZ USING generated_at::TIMESTAMPTZ;

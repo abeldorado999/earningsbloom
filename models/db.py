@@ -3,14 +3,25 @@ Database client — wraps Supabase for all DB operations.
 """
 from supabase import create_client, Client
 from config import SUPABASE_URL, SUPABASE_KEY
+import os
 
 _client: Client = None
+_admin_client: Client = None
 
 def get_db() -> Client:
+    """Read-only anon client for public queries."""
     global _client
     if _client is None:
         _client = create_client(SUPABASE_URL, SUPABASE_KEY)
     return _client
+
+def get_admin_db() -> Client:
+    """Service-role client for write operations (bypasses RLS)."""
+    global _admin_client
+    if _admin_client is None:
+        service_key = os.getenv("SUPABASE_SERVICE_KEY", SUPABASE_KEY)
+        _admin_client = create_client(SUPABASE_URL, service_key)
+    return _admin_client
 
 
 # ── Companies ──────────────────────────────────────────────
@@ -49,12 +60,40 @@ def get_earnings_detail(company_slug: str, quarter: str):
     if not company:
         return None
     res = (db.table("earnings_calls")
-             .select("*, summaries(*), companies(name, ticker, slug, exchange, sector)")
+             .select("*, summaries(*), companies(name, ticker, slug, exchange, sector, description)")
              .eq("company_id", company["id"])
              .eq("quarter", quarter.upper())
              .single()
              .execute())
     return res.data
+
+
+def get_prev_quarter_summary(company_id: str, current_call_date: str) -> dict | None:
+    """
+    Fetch the most recent prior quarter's summary for QoQ comparison.
+    Returns a merged dict with quarter label + summary fields, or None.
+    """
+    db = get_db()
+    res = (
+        db.table("earnings_calls")
+          .select("quarter, call_date, summaries(revenue_actual, eps_actual, gross_margin, net_income, yoy_growth, sentiment, summary_data)")
+          .eq("company_id", company_id)
+          .eq("status", "processed")
+          .lt("call_date", current_call_date)
+          .order("call_date", desc=True)
+          .limit(1)
+          .execute()
+    )
+    if not res.data:
+        return None
+    row = res.data[0]
+    summaries = row.get("summaries") or []
+    if not summaries:
+        return None
+    prev = summaries[0] if isinstance(summaries, list) else summaries
+    prev["quarter"]   = row.get("quarter", "")
+    prev["call_date"] = row.get("call_date", "")
+    return prev
 
 def get_latest_earnings(limit: int = 12):
     db = get_db()
@@ -67,17 +106,17 @@ def get_latest_earnings(limit: int = 12):
     return res.data
 
 def upsert_earnings_call(data: dict):
-    db = get_db()
+    db = get_admin_db()
     res = db.table("earnings_calls").upsert(data, on_conflict="company_id,quarter").execute()
     return res.data[0] if res.data else None
 
 def upsert_summary(data: dict):
-    db = get_db()
+    db = get_admin_db()
     res = db.table("summaries").upsert(data, on_conflict="earnings_call_id,language").execute()
     return res.data[0] if res.data else None
 
 def update_earnings_status(earnings_id: str, status: str):
-    db = get_db()
+    db = get_admin_db()
     db.table("earnings_calls").update({"status": status}).eq("id", earnings_id).execute()
 
 
@@ -93,7 +132,7 @@ def get_gemini_calls_today() -> int:
 
 def increment_gemini_calls():
     from datetime import date
-    db = get_db()
+    db = get_admin_db()
     today = date.today().isoformat()
     existing = db.table("api_usage").select("id,call_count").eq("date", today).execute()
     if existing.data:

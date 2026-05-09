@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section">
+
+  <div style="margin-bottom:2rem;">
+    <h1 class="section-title">All Companies</h1>
+    <p class="section-sub">{{ total }} companies tracked — click any to see their earnings summaries.</p>
+  </div>
+
+  {% for sector_name, companies in sectors.items()|sort %}
+  <div style="margin-bottom:2.5rem;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+               letter-spacing:.08em;margin-bottom:1rem;padding-bottom:.5rem;
+               border-bottom:1px solid var(--border);">
+      {{ sector_name }} ({{ companies|length }})
+    </h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;">
+      {% for c in companies|sort(attribute='name') %}
+      <a href="/company/{{ c.slug }}" class="search-result-item fade-in"
+         style="padding:.85rem 1.1rem;">
+        <div style="display:flex;flex-direction:column;gap:.3rem;">
+          <span style="font-weight:700;font-size:.925rem;">{{ c.name }}</span>
+          <div style="display:flex;gap:.4rem;align-items:center;">
+            <span class="card-ticker mono" style="font-size:.7rem;">{{ c.ticker }}</span>
+            <span class="tag" style="font-size:.7rem;">{{ c.exchange }}</span>
+          </div>
+        </div>
+        <span style="color:var(--accent);font-size:.8rem;font-weight:600;white-space:nowrap;">View →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

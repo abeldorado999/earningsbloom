@@ -9,6 +9,7 @@ SUPABASE_URL         = os.getenv("SUPABASE_URL")
 SUPABASE_KEY         = os.getenv("SUPABASE_KEY")
 FLASK_SECRET_KEY     = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 ADSENSE_PUBLISHER_ID = os.getenv("ADSENSE_PUBLISHER_ID", "")
+GA_MEASUREMENT_ID    = os.getenv("GA_MEASUREMENT_ID", "")
 
 # ── SEC EDGAR ──────────────────────────────────────────────
 SEC_EDGAR_USER_AGENT = os.getenv("SEC_EDGAR_USER_AGENT", "EarningsBloom contact@earningsbloom.com")
@@ -18,8 +19,8 @@ SEC_SUBMISSIONS_URL  = "https://data.sec.gov/submissions/CIK{cik}.json"
 SEC_FILING_URL       = "https://www.sec.gov/Archives/edgar/data/{cik}/{accession}/{filename}"
 
 # ── Gemini Models ──────────────────────────────────────────
-GEMINI_STAGE1_MODEL = "gemini-2.0-flash"          # Cheap: number extraction
-GEMINI_STAGE2_MODEL = "gemini-2.5-flash-preview-04-17"  # Smart: insights & summary
+GEMINI_STAGE1_MODEL = "gemini-2.5-flash"  # Number extraction (also smart, free tier)
+GEMINI_STAGE2_MODEL = "gemini-2.5-flash"  # Insights & summary
 
 # ── Rate Limiting (stay within free tier) ─────────────────
 MAX_GEMINI_CALLS_PER_DAY = 400   # Hard cap; free tier = 500/day for 2.5 Flash
