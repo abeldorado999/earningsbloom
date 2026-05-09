@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── API Keys ───────────────────────────────────────────────
-GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY")
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
 SUPABASE_URL         = os.getenv("SUPABASE_URL")
 SUPABASE_KEY         = os.getenv("SUPABASE_KEY")
 FLASK_SECRET_KEY     = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
