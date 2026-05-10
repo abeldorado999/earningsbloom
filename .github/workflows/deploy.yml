@@ -24,8 +24,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/581686806880/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'github-actions@project-bec3bbbc-a067-4b2c-8fd.iam.gserviceaccount.com'
+          workload_identity_provider: 'projects/620086779549/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions@project-2c48a406-4f98-489b-97f.iam.gserviceaccount.com'
 
       # 3. Set up gcloud CLI
       - name: Set up Cloud SDK
@@ -39,28 +39,28 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -t gcr.io/project-bec3bbbc-a067-4b2c-8fd/earningsbloom:${{ github.sha }} \
-            -t gcr.io/project-bec3bbbc-a067-4b2c-8fd/earningsbloom:latest .
+            -t gcr.io/project-2c48a406-4f98-489b-97f/earningsbloom:${{ github.sha }} \
+            -t gcr.io/project-2c48a406-4f98-489b-97f/earningsbloom:latest .
 
       # 6. Push to Google Container Registry
       - name: Push to GCR
         run: |
-          docker push gcr.io/project-bec3bbbc-a067-4b2c-8fd/earningsbloom:${{ github.sha }}
-          docker push gcr.io/project-bec3bbbc-a067-4b2c-8fd/earningsbloom:latest
+          docker push gcr.io/project-2c48a406-4f98-489b-97f/earningsbloom:${{ github.sha }}
+          docker push gcr.io/project-2c48a406-4f98-489b-97f/earningsbloom:latest
 
       # 7. Deploy new revision to Cloud Run
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy earningsbloom \
-            --image gcr.io/project-bec3bbbc-a067-4b2c-8fd/earningsbloom:${{ github.sha }} \
+            --image gcr.io/project-2c48a406-4f98-489b-97f/earningsbloom:${{ github.sha }} \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest,SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_KEY=SUPABASE_KEY:latest,SUPABASE_SERVICE_KEY=SUPABASE_SERVICE_KEY:latest,SEC_EDGAR_USER_AGENT=SEC_EDGAR_USER_AGENT:latest,FLASK_SECRET_KEY=FLASK_SECRET_KEY:latest,ADSENSE_PUBLISHER_ID=ADSENSE_PUBLISHER_ID:latest,PIPELINE_SECRET=PIPELINE_SECRET:latest \
+            --set-secrets SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_KEY=SUPABASE_KEY:latest,SUPABASE_SERVICE_KEY=SUPABASE_SERVICE_KEY:latest,SEC_EDGAR_USER_AGENT=SEC_EDGAR_USER_AGENT:latest,FLASK_SECRET_KEY=FLASK_SECRET_KEY:latest,ADSENSE_PUBLISHER_ID=ADSENSE_PUBLISHER_ID:latest,PIPELINE_SECRET=PIPELINE_SECRET:latest \
             --memory 1Gi \
             --min-instances 0 \
             --max-instances 5 \
-            --project project-bec3bbbc-a067-4b2c-8fd \
+            --project project-2c48a406-4f98-489b-97f \
             --quiet
 
       - name: Done
