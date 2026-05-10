@@ -8,7 +8,7 @@ import json
 import logging
 from google import genai
 from google.genai import types
-from config import GOOGLE_CLOUD_PROJECT, GEMINI_STAGE1_MODEL, GEMINI_STAGE2_MODEL, MAX_GEMINI_CALLS_PER_DAY
+from config import GEMINI_API_KEY, GEMINI_STAGE1_MODEL, GEMINI_STAGE2_MODEL, MAX_GEMINI_CALLS_PER_DAY
 from pipeline.prompts import (
     STAGE1_PROMPT, STAGE2_PROMPT,
     REVENUE_PATTERNS, EPS_PATTERNS, BEAT_PATTERNS, MISS_PATTERNS,
@@ -17,8 +17,8 @@ from models.db import get_gemini_calls_today, increment_gemini_calls
 
 logger = logging.getLogger(__name__)
 
-# Initialise Gemini client once via Vertex AI (Keyless ADC)
-_client = genai.Client(vertexai=True, project=GOOGLE_CLOUD_PROJECT, location="us-central1")
+# Initialise Gemini client via AI Studio key
+_client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 # ── Rate limit guard ───────────────────────────────────────
