@@ -39,6 +39,22 @@ def inject_globals():
     )
 
 
+# ── Canonical redirect (www → non-www, http → https) ──────
+@app.before_request
+def canonical_redirect():
+    """Force https:// and strip www. for SEO canonical URLs."""
+    host = request.host  # e.g. www.earningsbloom.com or earningsbloom.com
+    scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+
+    needs_www_strip  = host.startswith("www.")
+    needs_https      = (scheme == "http")
+
+    if needs_www_strip or needs_https:
+        new_host = host[4:] if needs_www_strip else host
+        url = f"https://{new_host}{request.full_path.rstrip('?')}"
+        return redirect(url, code=301)
+
+
 # ── Template filters ───────────────────────────────────────
 @app.template_filter("sentiment_color")
 def sentiment_color(sentiment: str) -> str:
