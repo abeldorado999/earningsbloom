@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── API Keys ───────────────────────────────────────────────
-GEMINI_API_KEY       = "AIzaSyDyZWAaHaCBeHpkDLb33Hrmyb_G0Sb5kyM"
+GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY")
 SUPABASE_URL         = os.getenv("SUPABASE_URL")
 SUPABASE_KEY         = os.getenv("SUPABASE_KEY")
 FLASK_SECRET_KEY     = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
