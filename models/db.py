@@ -60,7 +60,7 @@ def get_earnings_detail(company_slug: str, quarter: str):
     if not company:
         return None
     res = (db.table("earnings_calls")
-             .select("*, summaries(*), companies(name, ticker, slug, exchange, sector, description)")
+             .select("*, summaries(*), companies(name, ticker, slug, exchange, sector)")
              .eq("company_id", company["id"])
              .eq("quarter", quarter.upper())
              .single()
