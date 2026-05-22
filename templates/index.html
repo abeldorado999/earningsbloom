@@ -12,6 +12,20 @@
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "EarningsBloom",
+  "url": "{{ site_url }}",
+  "description": "{{ meta_description }}",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "{{ site_url }}/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
 {% endblock %}
 
 {% block content %}

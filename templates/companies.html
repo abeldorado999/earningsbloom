@@ -1,6 +1,34 @@
 {% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ site_url }}/"},
+    {"@type": "ListItem", "position": 2, "name": "Companies"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "{{ page_title }}",
+  "description": "{{ meta_description }}",
+  "url": "{{ site_url }}/companies",
+  "numberOfItems": {{ total }}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="section">
+
+  <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Home</a> &rsaquo;
+    <span>Companies</span>
+  </nav>
 
   <div style="margin-bottom:2rem;">
     <h1 class="section-title">All Companies</h1>
@@ -12,7 +40,8 @@
     <h2 style="font-size:1rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;
                letter-spacing:.08em;margin-bottom:1rem;padding-bottom:.5rem;
                border-bottom:1px solid var(--border);">
-      {{ sector_name }} ({{ companies|length }})
+      <a href="/sector/{{ sector_name|lower|replace(' ', '-') }}" style="color:inherit;text-decoration:none;"
+         title="View all {{ sector_name }} companies">{{ sector_name }}</a> ({{ companies|length }})
     </h2>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;">
       {% for c in companies|sort(attribute='name') %}

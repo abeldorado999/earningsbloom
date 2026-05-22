@@ -160,6 +160,7 @@ def earnings_detail(company_slug: str, quarter: str):
         page_title=page_title,
         meta_description=meta_desc,
         canonical_url=f"{SITE_URL}/earnings/{company_slug}/{quarter.lower()}",
+        og_type="article",
     )
 
 

@@ -1,19 +1,60 @@
 {% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ site_url }}/"},
+    {"@type": "ListItem", "position": 2, "name": "Companies", "item": "{{ site_url }}/companies"},
+    {"@type": "ListItem", "position": 3, "name": "{{ company.name }}"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "{{ page_title }}",
+  "description": "{{ meta_description }}",
+  "url": "{{ site_url }}/company/{{ company.slug }}",
+  "about": {
+    "@type": "Corporation",
+    "name": "{{ company.name }}",
+    "tickerSymbol": "{{ company.ticker }}"
+  }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="section" style="max-width:960px;">
+
+  <!-- Breadcrumb -->
+  <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Home</a> &rsaquo;
+    <a href="/companies">Companies</a> &rsaquo;
+    <span>{{ company.name }}</span>
+  </nav>
 
   <!-- Company Header -->
   <div class="company-header fade-in">
     <div style="font-size:3rem;">📊</div>
     <div class="company-info">
-      <h1>{{ company.name }}</h1>
+      <h1>{{ company.name }} ({{ company.ticker }}) Earnings Summaries</h1>
       <div class="company-meta">
         <span class="card-ticker mono">{{ company.ticker }}</span>
         <span class="tag">{{ company.exchange }}</span>
-        <span class="company-sector">{{ company.sector }}</span>
+        <a href="/sector/{{ company.sector|lower|replace(' ', '-') }}" class="company-sector" style="text-decoration:none;">{{ company.sector }}</a>
       </div>
     </div>
   </div>
+
+  <!-- Company Description -->
+  <p style="font-size:.925rem;line-height:1.8;color:var(--text-secondary);margin-bottom:2rem;">
+    {{ company.name }} ({{ company.ticker }}) is listed on the {{ company.exchange }} exchange in the {{ company.sector }} sector.
+    EarningsBloom tracks its quarterly earnings calls and provides free AI-generated summaries including revenue vs estimates, EPS, CEO guidance, and investor sentiment analysis.
+  </p>
 
   {% if earnings %}
   <h2 class="section-title">All Earnings Summaries</h2>

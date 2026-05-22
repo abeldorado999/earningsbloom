@@ -10,7 +10,20 @@
   "dateModified": "{{ summary.generated_at or earnings.call_date }}",
   "author": { "@type": "Person", "name": "Abhi", "url": "{{ site_url }}/about" },
   "publisher": { "@type": "Organization", "name": "EarningsBloom", "logo": {"@type": "ImageObject", "url": "{{ site_url }}/static/img/og-image.png"}, "url": "{{ site_url }}" },
-  "mainEntityOfPage": "{{ canonical_url }}"
+  "image": "{{ site_url }}/static/img/og-image.png",
+  "mainEntityOfPage": "{{ canonical_url }}",
+  "keywords": "{{ company.name }}, {{ company.ticker }}, earnings, {{ quarter_display }}, {{ company.sector }}"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ site_url }}/"},
+    {"@type": "ListItem", "position": 2, "name": "{{ company.name }}", "item": "{{ site_url }}/company/{{ company.slug }}"},
+    {"@type": "ListItem", "position": 3, "name": "{{ quarter_display }}"}
+  ]
 }
 </script>
 {% endblock %}
