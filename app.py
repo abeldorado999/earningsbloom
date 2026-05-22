@@ -89,11 +89,11 @@ def index():
     latest = get_latest_earnings(limit=12)
     return render_template("index.html",
         earnings=latest,
-        page_title=f"{SITE_NAME} — {SITE_TAGLINE}",
+        page_title=f"EarningsBloom — Free AI Earnings Call Summaries",
         meta_description=(
-            "Free AI-powered earnings call summaries for every public company. "
-            "Get instant TLDR, revenue vs estimates, CEO guidance and sentiment — "
-            "no paywall, no sign-up."
+            "Skip the 100-page PDF. Get instant AI summaries of every earnings call — "
+            "revenue vs estimates, CEO guidance, sentiment & key quotes. "
+            "186+ companies tracked. Always free."
         ),
     )
 
@@ -107,10 +107,10 @@ def company(slug: str):
     return render_template("company.html",
         company=company,
         earnings=earnings,
-        page_title=f"{company['name']} Earnings Call Summaries | {SITE_NAME}",
+        page_title=f"{company['name']} ({company['ticker']}) Earnings History | EarningsBloom",
         meta_description=(
-            f"All {company['name']} ({company['ticker']}) earnings call summaries. "
-            f"AI-generated TLDR, revenue vs estimates, and CEO guidance for every quarter. Free."
+            f"Every {company['name']} ({company['ticker']}) earnings call summarized by AI. "
+            f"Revenue vs estimates, EPS, CEO guidance & investor sentiment — all quarters, always free."
         ),
     )
 
@@ -125,19 +125,20 @@ def earnings_detail(company_slug: str, quarter: str):
     summary  = detail["summaries"][0] if isinstance(detail.get("summaries"), list) else detail.get("summaries", {})
     q_display = quarter_display(quarter.upper())
 
-    # Build rich title for SEO
-    beat_str = ""
-    if summary.get("revenue_beat") is True:  beat_str = "Revenue Beat, "
-    if summary.get("revenue_beat") is False: beat_str = "Revenue Miss, "
-    sentiment_str = (summary.get("sentiment") or "").capitalize()
+    # Build rich title for SEO (keep under 60 chars for Google)
+    ticker = company.get('ticker', '')
+    beat_tag = ""
+    if summary.get("revenue_beat") is True:  beat_tag = " ✓ Beat"
+    if summary.get("revenue_beat") is False: beat_tag = " ✗ Miss"
 
     page_title = (
-        f"{company.get('name','Company')} {q_display} Earnings Summary"
-        f" — {beat_str}{sentiment_str} Outlook | {SITE_NAME}"
+        f"{company.get('name','Company')} {q_display} Earnings{beat_tag} | EarningsBloom"
     )
+    rev = summary.get('revenue_actual', '')
+    sentiment = (summary.get('sentiment') or 'Neutral').capitalize()
     meta_desc = (
-        f"{company.get('name','')} reported {summary.get('revenue_actual','N/A')} revenue "
-        f"in {q_display}. AI summary: top wins, concerns, CEO guidance & key quotes. Free."
+        f"{company.get('name','')} ({ticker}) reported {rev} revenue in {q_display}. "
+        f"{sentiment} outlook. AI summary: wins, risks, CEO guidance & key quotes. Updated {detail.get('call_date', '')[:7]}."
     )
 
     # Fetch previous quarter for QoQ comparison
@@ -209,8 +210,8 @@ def companies():
     return render_template("companies.html",
         sectors=sectors,
         total=len(all_companies),
-        page_title=f"All Companies — {SITE_NAME}",
-        meta_description="Browse all companies with AI-powered earnings call summaries on EarningsBloom.",
+        page_title=f"All {len(all_companies)} Companies Tracked | EarningsBloom",
+        meta_description=f"Browse all {len(all_companies)} companies with free AI earnings call summaries. Sorted by sector — Tech, Healthcare, Finance & more.",
     )
 
 
